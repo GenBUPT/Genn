@@ -1,4 +1,5 @@
 #include"thread.h"
+#include"util.h"
 namespace gen
 {
     static thread_local Thread* t_thread = nullptr;
@@ -13,21 +14,31 @@ namespace gen
     }
     void Thread::SetName(const std::string & name)
     {
-        if(t_thread) t_thread->SetName(name);
+        if(t_thread) t_thread->setName(name);
         t_name = name;
     }
-    Thread::Thread(std::function<void()>cb,const std::string & name)
+    Thread::Thread(std::function<void()>cb,const std::string & name):m_cb(cb)
     {
         if(name.empty())m_name = "UNKNOW";
+        else m_name = name;
         int rt = pthread_create(&m_thread,nullptr,&Thread::run,this);
         if(rt)
         {
             throw std::logic_error("error thread create fail");
         }
+        Thread::SetName(name);
     }
     void* Thread::run(void * arg)
     {
-        
+        Thread* thread = (Thread*) arg;
+        t_thread = thread;
+        t_thread->m_id = gen::GetThreadId();
+        gen::Thread::SetName(t_thread->m_name);
+        pthread_setname_np(pthread_self(),thread->m_name.substr(0,15).c_str());
+        std::function<void()> cb;
+        cb.swap(thread->m_cb);
+        cb();
+        return (void*)0;
     }
     void Thread::join()
     {
@@ -39,9 +50,13 @@ namespace gen
                 throw std::logic_error("error join fail");
             }
         }
+        m_thread = 0;
     }
     Thread::~Thread()
     {
-        if(m_thread) pthread_detach(m_thread);
+        if(m_thread)
+        {
+            pthread_detach(m_thread);
+        }
     }
 }
