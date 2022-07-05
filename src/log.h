@@ -77,8 +77,8 @@ namespace gen
             void setFormatter(std::shared_ptr<Formatter> formatter){this->formater = formatter;}
             std::shared_ptr<Formatter> getFormatter() const {return formater;}
         protected:
-            LogLevel::Level m_level;
             std::string m_name;
+            LogLevel::Level m_level;
             std::shared_ptr<Formatter> formater;
     };
     class Logger : public std::enable_shared_from_this<Logger>
